@@ -1,0 +1,58 @@
+
+I want to improve the autosweeper through tiles mod which was made by trevice and he gave it me for maintaince:
+
+the original mod looks like this: 
+  [HarmonyPatch(typeof(Grid), "IsPhysicallyAccessible", null)]
+    internal class AutoSweeperThroughWallsMod_Grid_IsPhysicallyAccessible
+    {
+        private static bool Prefix(ref bool __result)
+        {
+            __result = true;
+            return false;
+        }
+    }
+    
+
+Now i want to restrict the through tiles feature to my super sweeper so i like to give the feature only if the pickup range is above a certain range. This is the mechanic in the sweeper:
+
+  private bool AsyncUpdate(int cell, HashSet<int> workspace, GameObject game_object)
+  {
+    workspace.Clear();
+    int x;
+    int y;
+    Grid.CellToXY(cell, out x, out y);
+    for (int index1 = y - this.pickupRange; index1 < y + this.pickupRange + 1; ++index1)
+    {
+      for (int index2 = x - this.pickupRange; index2 < x + this.pickupRange + 1; ++index2)
+      {
+        int cell1 = Grid.XYToCell(index2, index1);
+        if (Grid.IsValidCell(cell1) && Grid.IsPhysicallyAccessible(x, y, index2, index1, true))
+          workspace.Add(cell1);
+      }
+    }
+    bool flag = !this.reachableCells.SetEquals((IEnumerable<int>) workspace);
+    if (flag)
+    {
+      this.reachableCells.Clear();
+      this.reachableCells.UnionWith((IEnumerable<int>) workspace);
+    }
+    this.pickupables.Clear();
+    foreach (SolidTransferArm.CachedPickupable cachedPickupable in SolidTransferArm.cached_pickupables)
+    {
+      if (Grid.GetCellRange(cell, cachedPickupable.storage_cell) <= this.pickupRange && this.IsPickupableRelevantToMyInterests(cachedPickupable.pickupable.KPrefabID, cachedPickupable.storage_cell) && cachedPickupable.pickupable.CouldBePickedUpByTransferArm(game_object))
+        this.pickupables.Add(cachedPickupable.pickupable);
+    }
+    return flag;
+  }
+
+
+Now i wonder how to best replace the code
+[4:39 PM]
+        if (Grid.IsValidCell(cell1) && Grid.IsPhysicallyAccessible(x, y, index2, index1, true))
+          workspace.Add(cell1);
+ with 
+if (Grid.IsValidCell(cell1) && (Grid.IsPhysicallyAccessible(x, y, index2, index1, true)||this.pickupRange>30))
+
+                        workspace.Add(cell1);
+
+it would be grat if anyone can supply the transpiler code.
